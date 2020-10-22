@@ -60,11 +60,13 @@ client.on('message', (msg) => {
                 dispatcher.on('finish', () => {
                     resolve()
                 })
-            })
+            }).catch(reject)
         })
         const speakNext = () => {
             speakAuto(guild.queue[0]).then(() => {
                 guild.queue.shift()
+                if(guild.queue.length > 0) speakNext()
+            }).catch(() => {
                 if(guild.queue.length > 0) speakNext()
             })
         }
