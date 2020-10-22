@@ -48,27 +48,27 @@ client.on('message', (msg) => {
         return
     }
 
-    const channel = guilds[msg.channel.guild.id]
-    if(channel) {
-        channel.queue.push(msg.content)
+    const guild = guilds[msg.channel.guild.id]
+    if(guild) {
+        guild.queue.push(msg.content)
         const speakAuto = (text) => new Promise((resolve, reject) => {
             const kanaCount = text.split('').filter((c) => c >= '\u3040' && c <= '\u309f' || c >= '\u30a0' && c <= '\u30ff').length
             const hangulCount = text.split('').filter((c) => c >= '\uac00' && c <= '\ud7af').length
             const speaker = kanaCount > hangulCount ? 'yuri' : 'kyuri'
             speak(text, speaker).then((url) => {
-                const dispatcher = channel.connection.play(url)
+                const dispatcher = guild.connection.play(url)
                 dispatcher.on('finish', () => {
                     resolve()
                 })
             })
         })
         const speakNext = () => {
-            speakAuto(channel.queue[0]).then(() => {
-                channel.queue.shift()
-                if(channel.queue.length > 0) speakNext()
+            speakAuto(guild.queue[0]).then(() => {
+                guild.queue.shift()
+                if(guild.queue.length > 0) speakNext()
             })
         }
-        if(channel.queue.length === 1) speakNext()
+        if(guild.queue.length === 1) speakNext()
     }
 
 })
