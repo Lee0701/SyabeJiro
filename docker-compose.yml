@@ -1,0 +1,6 @@
+version: '3.8'
+services:
+  bot:
+    image: syabejiro
+    volumes:
+     - ./.env:/usr/src/app/.env
