@@ -1,6 +1,8 @@
 FROM node:12
 WORKDIR /usr/src/app
 
+RUN apt install -y ffmpeg
+
 COPY package*.json ./
 RUN npm install
 
