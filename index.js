@@ -44,7 +44,9 @@ client.on('message', (msg) => {
     if(channel) {
         channel.queue.push(msg.content)
         const speakAuto = (text) => new Promise((resolve, reject) => {
-            const speaker = 'yuri'
+            const kanaCount = text.split('').filter((c) => c >= '\u3040' && c <= '\u309f' || c >= '\u30a0' && c <= '\u30ff').length
+            const hangulCount = text.split('').filter((c) => c >= '\uac00' && c <= '\ud7af').length
+            const speaker = kanaCount > hangulCount ? 'yuri' : 'kyuri'
             speak(text, speaker).then((url) => {
                 const dispatcher = channel.connection.play(url)
                 dispatcher.on('finish', () => {
