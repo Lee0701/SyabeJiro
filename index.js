@@ -8,7 +8,7 @@ const client = new Discord.Client()
 const token = process.env.BOT_TOKEN
 const prefix = '2?'
 
-const channels = {}
+const guilds = {}
 
 const commands = {
     join: (args, msg) => {
@@ -16,7 +16,7 @@ const commands = {
         const voice = member.voice
         if(!voice || !voice.channel) return
         voice.channel.join().then((connection) => {
-            channels[msg.channel.id] = {
+            guilds[msg.channel.guild.id] = {
                 channel: msg.channel,
                 connection: connection,
                 queue: []
@@ -28,7 +28,7 @@ const commands = {
         const voice = member.voice
         if(!voice || !voice.channel) return
         voice.channel.leave()
-        if(channels[msg.channel.id]) delete channels[msg.channel.id]
+        if(guilds[msg.channel.guild.id]) delete guilds[msg.channel.guild.id]
     },
 }
 
@@ -40,7 +40,15 @@ client.on('message', (msg) => {
     if(msg.author.bot) return
     if(!msg.content) return
 
-    const channel = channels[msg.channel.id]
+    if(msg.content.startsWith(prefix)) {
+        const args = msg.content.slice(prefix.length).split(/\s+/)
+        const cmd = args.shift()
+        const command = commands[cmd]
+        if(command) command(args, msg)
+        return
+    }
+
+    const channel = guilds[msg.channel.guild.id]
     if(channel) {
         channel.queue.push(msg.content)
         const speakAuto = (text) => new Promise((resolve, reject) => {
@@ -63,12 +71,6 @@ client.on('message', (msg) => {
         if(channel.queue.length === 1) speakNext()
     }
 
-    if(msg.content.startsWith(prefix)) {
-        const args = msg.content.slice(prefix.length).split(/\s+/)
-        const cmd = args.shift()
-        const command = commands[cmd]
-        if(command) command(args, msg)
-    }
 })
 
 client.login(token)
