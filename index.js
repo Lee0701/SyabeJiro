@@ -49,7 +49,7 @@ client.on('message', (msg) => {
     }
 
     const guild = guilds[msg.channel.guild.id]
-    if(guild) {
+    if(guild && guild.channel.id == msg.channel.id) {
         guild.queue.push(msg.content)
         const speakAuto = (text) => new Promise((resolve, reject) => {
             const kanaCount = text.split('').filter((c) => c >= '\u3040' && c <= '\u309f' || c >= '\u30a0' && c <= '\u30ff').length
