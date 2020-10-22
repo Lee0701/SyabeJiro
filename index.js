@@ -50,17 +50,11 @@ client.on('message', (msg) => {
 
     const guild = guilds[msg.channel.guild.id]
     if(guild && guild.channel.id == msg.channel.id) {
-        guild.queue.push(msg.content)
-        const speakAuto = (text) => new Promise((resolve, reject) => {
-            const kanaCount = text.split('').filter((c) => c >= '\u3040' && c <= '\u309f' || c >= '\u30a0' && c <= '\u30ff').length
-            const hangulCount = text.split('').filter((c) => c >= '\uac00' && c <= '\ud7af').length
-            const speaker = kanaCount > hangulCount ? 'yuri' : 'kyuri'
-            speak(text, speaker).then((url) => {
-                const dispatcher = guild.connection.play(url)
-                dispatcher.on('finish', () => {
-                    resolve()
-                })
-            }).catch(reject)
+        const speakAuto = (url) => new Promise((resolve, reject) => {
+            const dispatcher = guild.connection.play(url)
+            dispatcher.on('finish', () => {
+                resolve()
+            })
         })
         const speakNext = () => {
             speakAuto(guild.queue[0]).then(() => {
@@ -70,7 +64,14 @@ client.on('message', (msg) => {
                 if(guild.queue.length > 0) speakNext()
             })
         }
-        if(guild.queue.length === 1) speakNext()
+        const text = msg.content
+        const kanaCount = text.split('').filter((c) => c >= '\u3040' && c <= '\u309f' || c >= '\u30a0' && c <= '\u30ff').length
+        const hangulCount = text.split('').filter((c) => c >= '\uac00' && c <= '\ud7af').length
+        const speaker = kanaCount > hangulCount ? 'yuri' : 'kyuri'
+        speak(text, speaker).then((url) => {
+            guild.queue.push(url)
+            if(guild.queue.length === 1) speakNext()
+        })
     }
 
 })
