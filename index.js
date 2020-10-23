@@ -120,7 +120,7 @@ client.on('message', (msg) => {
         }
         const book = getWordBook(msg.channel.guild.id)
         const text = book ? replaceBook(book, msg.content) : msg.content
-        const kanaCount = text.split('').filter((c) => c >= '\u3040' && c <= '\u309f' || c >= '\u30a0' && c <= '\u30ff').length
+        const kanaCount = text.split('').filter((c) => c >= '\u3040' && c <= '\u309f' || c >= '\u30a0' && c <= '\u30ff' || c >= '\uff66' && c <= '\uff9d').length
         const hangulCount = text.split('').filter((c) => c >= '\uac00' && c <= '\ud7af').length
         const speaker = kanaCount > hangulCount ? 'yuri' : 'kyuri'
         speak(text, speaker).then((url) => {
