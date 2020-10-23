@@ -9,6 +9,12 @@ const token = process.env.BOT_TOKEN
 const prefix = '2?'
 
 const guilds = {}
+const wordBooks = {}
+
+const getWordBook = (guild) => {
+    if(!wordBooks[guild]) wordBooks[guild] = {}
+    return wordBooks[guild]
+}
 
 const commands = {
     join: (args, msg) => {
@@ -30,6 +36,25 @@ const commands = {
         voice.channel.leave()
         if(guilds[msg.channel.guild.id]) delete guilds[msg.channel.guild.id]
     },
+    wordbook: (args, msg) => {
+        if(args.length < 1) return
+        const book = getWordBook(msg.channel.guild.id)
+        if(args[0] == 'add') {
+            if(args.length < 3) return
+            const word = args[1]
+            const reading = args[2]
+            book[word] = reading
+            msg.channel.send(`${word} => ${reading}`)
+        } else if(args[0] == 'remove' || args[0] == 'delete') {
+            if(args.length < 2) return
+            const word = args[1]
+            if(book[word]) delete book[word]
+            msg.channel.send(`${word} => ${word}`)
+        } else if(args[0] == 'list') {
+            const text = Object.entries(book).map(([word, reading]) => `${word} => ${reading}`).join('\n')
+            msg.channel.send(text)
+        }
+    }
 }
 
 client.on('ready', () => {
