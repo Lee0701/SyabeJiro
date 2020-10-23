@@ -17,6 +17,28 @@ const getWordBook = (guild) => {
     return wordBook[guild]
 }
 
+const replaceBook = (book, text) => {
+    const length = Object.keys(book).reduce((a, c) => c.length > a.length ? c : a).length
+    let result = ''
+    for(let i = 0; i < text.length; ) {
+        let found = false
+        for(let j = length; j > 0; j--) {
+            if(i + j > text.length) continue
+            const word = text.slice(i, i + j)
+            if(book[word]) {
+                result += book[word]
+                i += word.length
+                found = true
+            }
+        }
+        if(!found) {
+            result += text.charAt(i)
+            i += 1
+        }
+    }
+    return result
+}
+
 const readWordBook = () => wordBook = fs.existsSync('wordbook.json') ? JSON.parse(fs.readFileSync('wordbook.json').toString()) : wordBook
 const writeWordBook = () => fs.writeFileSync('wordbook.json', JSON.stringify(wordBook, null, 2))
 
@@ -96,7 +118,8 @@ client.on('message', (msg) => {
                 if(guild.queue.length > 0) speakNext()
             })
         }
-        const text = msg.content
+        const book = getWordBook(msg.channel.guild.id)
+        const text = book ? replaceBook(book, msg.content) : msg.content
         const kanaCount = text.split('').filter((c) => c >= '\u3040' && c <= '\u309f' || c >= '\u30a0' && c <= '\u30ff').length
         const hangulCount = text.split('').filter((c) => c >= '\uac00' && c <= '\ud7af').length
         const speaker = kanaCount > hangulCount ? 'yuri' : 'kyuri'
