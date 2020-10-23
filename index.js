@@ -1,5 +1,6 @@
 
 require('dotenv').config()
+const fs = require('fs')
 const Discord = require('discord.js')
 const {speak} = require('./papago-tts.js')
 
@@ -8,13 +9,16 @@ const client = new Discord.Client()
 const token = process.env.BOT_TOKEN
 const prefix = '2?'
 
-const guilds = {}
-const wordBooks = {}
+let guilds = {}
+let wordBook = {}
 
 const getWordBook = (guild) => {
-    if(!wordBooks[guild]) wordBooks[guild] = {}
-    return wordBooks[guild]
+    if(!wordBook[guild]) wordBook[guild] = {}
+    return wordBook[guild]
 }
+
+const readWordBook = () => wordBook = fs.existsSync('wordbook.json') ? JSON.parse(fs.readFileSync('wordbook.json').toString()) : wordBook
+const writeWordBook = () => fs.writeFileSync('wordbook.json', JSON.stringify(wordBook, null, 2))
 
 const commands = {
     join: (args, msg) => {
@@ -45,11 +49,13 @@ const commands = {
             const reading = args[2]
             book[word] = reading
             msg.channel.send(`${word} => ${reading}`)
+            writeWordBook()
         } else if(args[0] == 'remove' || args[0] == 'delete') {
             if(args.length < 2) return
             const word = args[1]
             if(book[word]) delete book[word]
             msg.channel.send(`${word} => ${word}`)
+            writeWordBook()
         } else if(args[0] == 'list') {
             const text = Object.entries(book).map(([word, reading]) => `${word} => ${reading}`).join('\n')
             msg.channel.send(text)
@@ -59,6 +65,7 @@ const commands = {
 
 client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}.`)
+    readWordBook()
 })
 
 client.on('message', (msg) => {

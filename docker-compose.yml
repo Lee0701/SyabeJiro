@@ -5,3 +5,4 @@ services:
     image: syabejiro
     volumes:
      - ./.env:/usr/src/app/.env
+     - ./wordbook.json:/usr/src/app/wordbook.json
