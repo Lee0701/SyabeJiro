@@ -1,6 +1,7 @@
 
 require('dotenv').config()
 const fs = require('fs')
+const queue = require('block-queue')
 const Discord = require('discord.js')
 const {speak} = require('./papago-tts.js')
 
@@ -53,6 +54,14 @@ const writeWordBook = () => fs.writeFileSync(WORDBOOK_FILENAME, JSON.stringify(w
 
 const preprocess = (text) => REGEX_REPLACEMENTS.reduce((acc, [regex, replacement]) => acc.replace(regex, replacement), text)
 
+const processQueue = ({connection, text, speaker}, done) => {
+    speak(text, speaker).then((url) => {
+        const dispatcher = connection.play(url)
+        dispatcher.on('finish', () => done())
+        dispatcher.on('error', () => done())
+    }).catch(() => done())
+}
+
 const commands = {
     join: (args, msg) => {
         const member = msg.guild.members.resolve(msg.author)
@@ -62,7 +71,7 @@ const commands = {
             guilds[msg.channel.guild.id] = {
                 channel: msg.channel,
                 connection: connection,
-                queue: []
+                queue: queue(1, processQueue)
             }
         })
     },
@@ -115,30 +124,14 @@ client.on('message', (msg) => {
 
     const guild = guilds[msg.channel.guild.id]
     if(guild && guild.channel.id == msg.channel.id) {
-        const speakAuto = (url) => new Promise((resolve, reject) => {
-            const dispatcher = guild.connection.play(url)
-            dispatcher.on('finish', () => {
-                resolve()
-            })
-        })
-        const speakNext = () => {
-            speakAuto(guild.queue[0]).then(() => {
-                guild.queue.shift()
-                if(guild.queue.length > 0) speakNext()
-            }).catch(() => {
-                if(guild.queue.length > 0) speakNext()
-            })
-        }
+        const connection = guild.connection
         const book = getWordBook(msg.channel.guild.id)
         const content = preprocess(msg.content)
         const text = book ? replaceBook(book, content) : content
         const kanaCount = text.split('').filter((c) => c >= '\u3040' && c <= '\u309f' || c >= '\u30a0' && c <= '\u30ff' || c >= '\uff66' && c <= '\uff9d').length
         const hangulCount = text.split('').filter((c) => c >= '\uac00' && c <= '\ud7af').length
         const speaker = kanaCount > hangulCount ? 'yuri' : 'kyuri'
-        speak(text, speaker).then((url) => {
-            guild.queue.push(url)
-            if(guild.queue.length === 1) speakNext()
-        })
+        guild.queue.push({connection, text, speaker})
     }
 
 })

@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "@discordjs/opus": "^0.3.2",
+    "block-queue": "0.0.2",
     "discord.js": "^12.4.0",
     "dotenv": "^8.2.0",
     "phin": "^3.5.0",

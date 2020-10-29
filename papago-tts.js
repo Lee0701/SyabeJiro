@@ -57,4 +57,6 @@ const speak = (text, speaker) => new Promise((resolve, reject) => {
   makeID(text, speaker).then((id) => resolve(`https://papago.naver.com/apis/tts/${id}`)).catch(reject)
 })
 
+updateKey()
+
 module.exports = {makeID, speak}
