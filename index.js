@@ -27,7 +27,7 @@ const getWordBook = (guild) => {
     return wordBook[guild]
 }
 
-const replaceBook = (book, text) => {
+const replaceBook = (book, text, language) => {
     const length = Object.keys(book).reduce((a, c) => c.length > a.length ? c : a).length
     let result = ''
     for(let i = 0; i < text.length; ) {
@@ -35,8 +35,9 @@ const replaceBook = (book, text) => {
         for(let j = length; j > 0; j--) {
             if(i + j > text.length) continue
             const word = text.slice(i, i + j)
-            if(book[word]) {
-                result += book[word]
+            const match = book[`${word}/${language}`] || book[word] || null
+            if(match) {
+                result += match
                 i += word.length
                 found = true
             }
@@ -127,13 +128,13 @@ client.on('message', (msg) => {
         const connection = guild.connection
         const book = getWordBook(msg.channel.guild.id)
         const content = preprocess(msg.content)
-        const text = book ? replaceBook(book, content) : content
-        const kanaCount = text.split('').filter((c) => c >= '\u3040' && c <= '\u309f' || c >= '\u30a0' && c <= '\u30ff' || c >= '\uff66' && c <= '\uff9d').length
-        const hangulCount = text.split('').filter((c) => c >= '\uac00' && c <= '\ud7af').length
-        const speaker = kanaCount > hangulCount ? 'yuri' : 'kyuri'
+        const kanaCount = content.split('').filter((c) => c >= '\u3040' && c <= '\u309f' || c >= '\u30a0' && c <= '\u30ff' || c >= '\uff66' && c <= '\uff9d').length
+        const hangulCount = content.split('').filter((c) => c >= '\uac00' && c <= '\ud7af').length
+        const language = kanaCount > hangulCount ? 'ja' : 'ko'
+        const speaker = language == 'ja' ? 'yuri' : 'kyuri'
+        const text = book ? replaceBook(book, content, language) : content
         guild.queue.push({connection, text, speaker})
     }
-
 })
 
 client.login(token)
