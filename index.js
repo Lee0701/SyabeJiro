@@ -9,6 +9,13 @@ const client = new Discord.Client()
 const token = process.env.BOT_TOKEN
 const prefix = '2?'
 
+const MENTION_REGEX = /\<(\@\!|\#)\d{18}\>/g
+const URL_REGEX = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/=]*)/g
+const REGEX_REPLACEMENTS = [
+    [MENTION_REGEX, ''],
+    [URL_REGEX, ''],
+]
+
 let guilds = {}
 let wordBook = {}
 
@@ -42,7 +49,7 @@ const replaceBook = (book, text) => {
 const readWordBook = () => wordBook = fs.existsSync('wordbook.json') ? JSON.parse(fs.readFileSync('wordbook.json').toString()) : wordBook
 const writeWordBook = () => fs.writeFileSync('wordbook.json', JSON.stringify(wordBook, null, 2))
 
-const preprocess = (text) => text.replace(/\<(\@\!|\#)\d{18}\>/g, '')
+const preprocess = (text) => REGEX_REPLACEMENTS.reduce((acc, [regex, replacement]) => acc.replace(regex, replacement), text)
 
 const commands = {
     join: (args, msg) => {
