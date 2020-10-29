@@ -9,6 +9,8 @@ const client = new Discord.Client()
 const token = process.env.BOT_TOKEN
 const prefix = '2?'
 
+const WORDBOOK_FILENAME = 'wordbook.json'
+
 const MENTION_REGEX = /\<(\@\!|\#)\d{18}\>/g
 const URL_REGEX = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/=]*)/g
 const REGEX_REPLACEMENTS = [
@@ -46,8 +48,8 @@ const replaceBook = (book, text) => {
     return result
 }
 
-const readWordBook = () => wordBook = fs.existsSync('wordbook.json') ? JSON.parse(fs.readFileSync('wordbook.json').toString()) : wordBook
-const writeWordBook = () => fs.writeFileSync('wordbook.json', JSON.stringify(wordBook, null, 2))
+const readWordBook = () => wordBook = fs.existsSync(WORDBOOK_FILENAME) ? JSON.parse(fs.readFileSync(WORDBOOK_FILENAME).toString()) : wordBook
+const writeWordBook = () => fs.writeFileSync(WORDBOOK_FILENAME, JSON.stringify(wordBook, null, 2))
 
 const preprocess = (text) => REGEX_REPLACEMENTS.reduce((acc, [regex, replacement]) => acc.replace(regex, replacement), text)
 
