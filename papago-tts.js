@@ -28,6 +28,7 @@ const makeID = (text, speaker) => new Promise((resolve, reject) => {
     return {
       url: baseUrl,
       method: 'POST',
+      timeout: 1000,
       headers: {
         'User-Agent': 'Mozilla/5.0',
         'Content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
