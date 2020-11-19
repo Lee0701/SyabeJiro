@@ -28,7 +28,7 @@ const getWordBook = (guild) => {
 }
 
 const replaceBook = (book, text, language) => {
-    const length = Object.keys(book).reduce((a, c) => c.length > a.length ? c : a).length
+    const length = Object.keys(book).reduce((a, c) => c.length > a.length ? c : a, '').length
     let result = ''
     for(let i = 0; i < text.length; ) {
         let found = false
