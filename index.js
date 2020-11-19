@@ -56,11 +56,14 @@ const writeWordBook = () => fs.writeFileSync(WORDBOOK_FILENAME, JSON.stringify(w
 const preprocess = (text) => REGEX_REPLACEMENTS.reduce((acc, [regex, replacement]) => acc.replace(regex, replacement), text)
 
 const processQueue = ({connection, text, speaker}, done) => {
-    speak(text, speaker).then((url) => {
-        const dispatcher = connection.play(url)
-        dispatcher.on('finish', () => done())
-        dispatcher.on('error', () => done())
-    }).catch(() => done())
+    const process = () => {
+        speak(text, speaker).then((url) => {
+            const dispatcher = connection.play(url)
+            dispatcher.on('finish', () => done())
+            dispatcher.on('error', () => done())
+        }).catch(() => process())
+    }
+    process()
 }
 
 const commands = {
