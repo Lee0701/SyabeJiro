@@ -55,15 +55,27 @@ const writeWordBook = () => fs.writeFileSync(WORDBOOK_FILENAME, JSON.stringify(w
 
 const preprocess = (text) => REGEX_REPLACEMENTS.reduce((acc, [regex, replacement]) => acc.replace(regex, replacement), text)
 
-const processQueue = ({connection, text, speaker}, done) => {
-    const process = () => {
+const processFetchQueue = ({guild, text, speaker}, done) => {
+    const connection = guild.connection
+    speak(text, speaker).then((url) => {
+        guild.speakQueue.push({connection, url})
+        done()
+    }).catch((err) => {
+        console.error(err)
         speak(text, speaker).then((url) => {
-            const dispatcher = connection.play(url)
-            dispatcher.on('finish', () => done())
-            dispatcher.on('error', () => done())
-        }).catch(() => process())
-    }
-    process()
+            guild.speakQueue.push({connection, url})
+            done()
+        }).catch((err) => {
+            console.error(err)
+            done()
+        })
+    })
+}
+
+const processSpeakQueue = ({connection, url}, done) => {
+    const dispatcher = connection.play(url)
+    dispatcher.on('finish', () => done())
+    dispatcher.on('error', () => done())
 }
 
 const commands = {
@@ -75,7 +87,8 @@ const commands = {
             guilds[msg.channel.guild.id] = {
                 channel: msg.channel,
                 connection: connection,
-                queue: queue(1, processQueue)
+                fetchQueue: queue(1, processFetchQueue),
+                speakQueue: queue(1, processSpeakQueue)
             }
         })
     },
@@ -128,7 +141,6 @@ client.on('message', (msg) => {
 
     const guild = guilds[msg.channel.guild.id]
     if(guild && guild.channel.id == msg.channel.id) {
-        const connection = guild.connection
         const book = getWordBook(msg.channel.guild.id)
         const content = preprocess(msg.content)
         const kanaCount = content.split('').filter((c) => c >= '\u3040' && c <= '\u309f' || c >= '\u30a0' && c <= '\u30ff' || c >= '\uff66' && c <= '\uff9d').length
@@ -136,7 +148,7 @@ client.on('message', (msg) => {
         const language = kanaCount > hangulCount ? 'ja' : 'ko'
         const speaker = language == 'ja' ? 'yuri' : 'kyuri'
         const text = book ? replaceBook(book, content, language) : content
-        guild.queue.push({connection, text, speaker})
+        guild.fetchQueue.push({guild, text, speaker})
     }
 })
 
