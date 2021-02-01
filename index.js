@@ -1,6 +1,8 @@
 
 require('dotenv').config()
 const fs = require('fs')
+const path = require('path')
+const {https} = require('follow-redirects')
 const queue = require('block-queue')
 const Discord = require('discord.js')
 const {speak} = require('./papago-tts.js')
@@ -8,9 +10,12 @@ const {speak} = require('./papago-tts.js')
 const client = new Discord.Client()
 
 const token = process.env.BOT_TOKEN
-const prefix = '2?'
+const prefix = process.env.CMD_PREFIX || '2?'
 
 const WORDBOOK_FILENAME = 'wordbook.json'
+const CACHE_DIRNAME = 'cache'
+const FILE_PREFIX = 'file?'
+const FILE_FORCE_PREFIX = 'file?!'
 
 const MENTION_REGEX = /\<(\@\!|\#)\d{18}\>/g
 const URL_REGEX = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/=]*)/g
@@ -52,29 +57,58 @@ const replaceBook = (book, text, language) => {
     return result
 }
 
+const downloadFile = (url, force=false) => new Promise(async (resolve, reject) => {
+    const fileName = path.join(CACHE_DIRNAME, encodeURIComponent(url))
+    if(force || !fs.existsSync(fileName)) {
+        const file = fs.createWriteStream(fileName)
+        https.get(url, (res) => {
+            res.pipe(file)
+            file.on('finish', () => {
+                resolve(fs.createReadStream(fileName))
+            })
+        })
+    } else {
+        resolve(fs.createReadStream(fileName))
+    }
+})
+
 const readWordBook = () => wordBook = fs.existsSync(WORDBOOK_FILENAME) ? JSON.parse(fs.readFileSync(WORDBOOK_FILENAME).toString()) : wordBook
 const writeWordBook = () => fs.writeFileSync(WORDBOOK_FILENAME, JSON.stringify(wordBook, null, 2))
 
 const preprocess = (text) => REGEX_REPLACEMENTS.reduce((acc, [regex, replacement]) => acc.replace(regex, replacement), text)
 
 const processFetchQueue = ({guild, text, speaker}, done) => {
-    speak(text, speaker).then((url) => {
-        guild.speakQueue.push({guild, url})
-        done()
-    }).catch((err) => {
-        console.error(err)
-        speak(text, speaker).then((url) => {
+    if(text.startsWith(FILE_PREFIX) || text.startsWith(FILE_FORCE_PREFIX)) {
+        if(!fs.existsSync(CACHE_DIRNAME)) fs.mkdirSync(CACHE_DIRNAME)
+        const force = text.startsWith(FILE_FORCE_PREFIX)
+        const url = text.startsWith(FILE_FORCE_PREFIX)
+                ? text.slice(FILE_FORCE_PREFIX.length)
+                : text.slice(FILE_PREFIX.length)
+        downloadFile(url, force).then((stream) => {
+            guild.speakQueue.push({guild, url: stream, volume: 0.25})
+            done()
+        })
+    } else {
+        text = preprocess(text)
+            speak(text, speaker).then((url) => {
             guild.speakQueue.push({guild, url})
             done()
         }).catch((err) => {
             console.error(err)
-            done()
+            speak(text, speaker).then((url) => {
+                guild.speakQueue.push({guild, url})
+                done()
+            }).catch((err) => {
+                console.error(err)
+                done()
+            })
         })
-    })
+    }
 }
 
-const processSpeakQueue = ({guild, url}, done) => {
-    const dispatcher = guild.connection.play(url)
+const processSpeakQueue = ({guild, url, volume}, done) => {
+    if(!volume) volume = 1
+    const dispatcher = guild.connection.play(url, {volume})
     dispatcher.on('finish', () => done())
     dispatcher.on('error', () => done())
     guild.dispatcher = dispatcher
@@ -166,7 +200,7 @@ client.on('message', (msg) => {
     const guild = guilds[msg.channel.guild.id]
     if(guild && guild.channel.id == msg.channel.id) {
         const book = getWordBook(msg.channel.guild.id)
-        const content = preprocess(msg.content)
+        const content = msg.content
         const kanaCount = content.split('').filter((c) => c >= '\u3040' && c <= '\u309f' || c >= '\u30a0' && c <= '\u30ff' || c >= '\uff66' && c <= '\uff9d').length
         const hangulCount = content.split('').filter((c) => c >= '\uac00' && c <= '\ud7af').length
         const language = kanaCount > hangulCount ? 'ja' : 'ko'
