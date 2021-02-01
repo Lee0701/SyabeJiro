@@ -58,14 +58,13 @@ const writeWordBook = () => fs.writeFileSync(WORDBOOK_FILENAME, JSON.stringify(w
 const preprocess = (text) => REGEX_REPLACEMENTS.reduce((acc, [regex, replacement]) => acc.replace(regex, replacement), text)
 
 const processFetchQueue = ({guild, text, speaker}, done) => {
-    const connection = guild.connection
     speak(text, speaker).then((url) => {
-        guild.speakQueue.push({connection, url})
+        guild.speakQueue.push({guild, url})
         done()
     }).catch((err) => {
         console.error(err)
         speak(text, speaker).then((url) => {
-            guild.speakQueue.push({connection, url})
+            guild.speakQueue.push({guild, url})
             done()
         }).catch((err) => {
             console.error(err)
@@ -74,54 +73,77 @@ const processFetchQueue = ({guild, text, speaker}, done) => {
     })
 }
 
-const processSpeakQueue = ({connection, url}, done) => {
-    const dispatcher = connection.play(url)
+const processSpeakQueue = ({guild, url}, done) => {
+    const dispatcher = guild.connection.play(url)
     dispatcher.on('finish', () => done())
     dispatcher.on('error', () => done())
+    guild.dispatcher = dispatcher
+}
+
+const joinCommand = (args, msg) => {
+    const member = msg.guild.members.resolve(msg.author)
+    const voice = member.voice
+    if(!voice || !voice.channel) return
+    voice.channel.join().then((connection) => {
+        guilds[msg.channel.guild.id] = {
+            channel: msg.channel,
+            connection: connection,
+            dispatcher: null,
+            fetchQueue: queue(1, processFetchQueue),
+            speakQueue: queue(1, processSpeakQueue)
+        }
+    })
+}
+
+const leaveCommand = (args, msg) => {
+    const member = msg.guild.members.resolve(msg.author)
+    const voice = member.voice
+    if(!voice || !voice.channel) return
+    voice.channel.leave()
+    if(guilds[msg.channel.guild.id]) delete guilds[msg.channel.guild.id]
+}
+
+const stopCommand = (args, msg) => {
+    const guild = guilds[msg.channel.guild.id]
+    if(guild && guild.dispatcher) {
+        guild.dispatcher.destroy('stopped')
+    }
+}
+
+const wordbookCommand = (args, msg) => {
+    if(args.length < 1) return
+    const book = getWordBook(msg.channel.guild.id)
+    if(args[0] == 'add') {
+        if(args.length < 3) return
+        const word = args[1]
+        const reading = args[2]
+        book[word] = reading
+        msg.channel.send(`${word} => ${reading}`)
+        writeWordBook()
+    } else if(args[0] == 'remove' || args[0] == 'delete') {
+        if(args.length < 2) return
+        const word = args[1]
+        if(book[word]) delete book[word]
+        msg.channel.send(`${word} => ${word}`)
+        writeWordBook()
+    } else if(args[0] == 'list') {
+        const text = Object.entries(book).map(([word, reading]) => `${word} => ${reading}`).join('\n')
+        msg.channel.send(text)
+    }
 }
 
 const commands = {
-    join: (args, msg) => {
-        const member = msg.guild.members.resolve(msg.author)
-        const voice = member.voice
-        if(!voice || !voice.channel) return
-        voice.channel.join().then((connection) => {
-            guilds[msg.channel.guild.id] = {
-                channel: msg.channel,
-                connection: connection,
-                fetchQueue: queue(1, processFetchQueue),
-                speakQueue: queue(1, processSpeakQueue)
-            }
-        })
-    },
-    leave: (args, msg) => {
-        const member = msg.guild.members.resolve(msg.author)
-        const voice = member.voice
-        if(!voice || !voice.channel) return
-        voice.channel.leave()
-        if(guilds[msg.channel.guild.id]) delete guilds[msg.channel.guild.id]
-    },
-    wordbook: (args, msg) => {
-        if(args.length < 1) return
-        const book = getWordBook(msg.channel.guild.id)
-        if(args[0] == 'add') {
-            if(args.length < 3) return
-            const word = args[1]
-            const reading = args[2]
-            book[word] = reading
-            msg.channel.send(`${word} => ${reading}`)
-            writeWordBook()
-        } else if(args[0] == 'remove' || args[0] == 'delete') {
-            if(args.length < 2) return
-            const word = args[1]
-            if(book[word]) delete book[word]
-            msg.channel.send(`${word} => ${word}`)
-            writeWordBook()
-        } else if(args[0] == 'list') {
-            const text = Object.entries(book).map(([word, reading]) => `${word} => ${reading}`).join('\n')
-            msg.channel.send(text)
-        }
-    }
+    join: joinCommand,
+    summon: joinCommand,
+    s: joinCommand,
+    leave: leaveCommand,
+    bye: leaveCommand,
+    b: leaveCommand,
+    stop: stopCommand,
+    damare: stopCommand,
+    d: stopCommand,
+    wordbook: wordbookCommand,
+    wb: wordbookCommand,
 }
 
 client.on('ready', () => {
