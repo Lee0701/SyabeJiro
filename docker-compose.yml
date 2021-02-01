@@ -7,3 +7,4 @@ services:
      - ./.env:/usr/src/app/.env
      - ./wordbook.json:/usr/src/app/wordbook.json
      - ./cache:/usr/src/app/cache
+    restart: always
