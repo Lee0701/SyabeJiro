@@ -35,6 +35,8 @@ const getWordBook = (guild) => {
 }
 
 const replaceBook = (book, text, language) => {
+    const fullText = book[`|${text}|/${language}`] || book[`|${text}|`]
+    if(fullText) return fullText
     const length = Object.keys(book).reduce((a, c) => c.length > a.length ? c : a, '').length
     let result = ''
     for(let i = 0; i < text.length; ) {
