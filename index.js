@@ -91,8 +91,7 @@ const processFetchQueue = ({guild, text, speaker}, done) => {
             done()
         })
     } else {
-        text = preprocess(text)
-            speak(text, speaker).then((url) => {
+        speak(text, speaker).then((url) => {
             guild.speakQueue.push({guild, url})
             done()
         }).catch((err) => {
@@ -202,7 +201,7 @@ client.on('message', (msg) => {
     const guild = guilds[msg.channel.guild.id]
     if(guild && guild.channel.id == msg.channel.id) {
         const book = getWordBook(msg.channel.guild.id)
-        const content = msg.content
+        const content = preprocess(msg.content)
         const kanaCount = content.split('').filter((c) => c >= '\u3040' && c <= '\u309f' || c >= '\u30a0' && c <= '\u30ff' || c >= '\uff66' && c <= '\uff9d').length
         const hangulCount = content.split('').filter((c) => c >= '\uac00' && c <= '\ud7af').length
         const language = kanaCount > hangulCount ? 'ja' : 'ko'
