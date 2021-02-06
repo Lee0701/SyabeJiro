@@ -148,7 +148,7 @@ const stopCommand = (args, msg) => {
 const wordbookCommand = (args, msg, cmd, fullArgs) => {
     if(args.length < 1) return
     const subCommand = args.shift()
-    fullArgs = fullArgs.slice(cmd.length + subCommand.length)
+    fullArgs = fullArgs.slice(cmd.length + subCommand.length + 2)
     const book = getWordBook(msg.channel.guild.id)
     if(subCommand == 'add') {
         const [word, reading] = fullArgs.trim().split('=>').map((token) => token.trim())
