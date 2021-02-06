@@ -145,23 +145,22 @@ const stopCommand = (args, msg) => {
     }
 }
 
-const wordbookCommand = (args, msg) => {
+const wordbookCommand = (args, msg, cmd, fullArgs) => {
     if(args.length < 1) return
+    const subCommand = args.shift()
+    fullArgs = fullArgs.slice(cmd.length + subCommand.length)
     const book = getWordBook(msg.channel.guild.id)
-    if(args[0] == 'add') {
-        if(args.length < 3) return
-        const word = args[1]
-        const reading = args[2]
+    if(subCommand == 'add') {
+        const [word, reading] = fullArgs.trim().split('=>').map((token) => token.trim())
         book[word] = reading
         msg.channel.send(`${word} => ${reading}`)
         writeWordBook()
-    } else if(args[0] == 'remove' || args[0] == 'delete') {
-        if(args.length < 2) return
-        const word = args[1]
+    } else if(subCommand == 'remove' || subCommand == 'delete' || subCommand == 'rm') {
+        const word = fullArgs.trim()
         if(book[word]) delete book[word]
         msg.channel.send(`${word} => ${word}`)
         writeWordBook()
-    } else if(args[0] == 'list') {
+    } else if(subCommand == 'list' || subCommand == 'ls') {
         const text = Object.entries(book).map(([word, reading]) => `${word} => ${reading}`).join('\n')
         msg.channel.send(text)
     }
@@ -191,10 +190,11 @@ client.on('message', (msg) => {
     if(!msg.content) return
 
     if(msg.content.startsWith(prefix)) {
-        const args = msg.content.slice(prefix.length).split(/\s+/)
+        const fullArgs = msg.content.slice(prefix.length)
+        const args = fullArgs.split(/\s+/)
         const cmd = args.shift()
         const command = commands[cmd]
-        if(command) command(args, msg)
+        if(command) command(args, msg, cmd, fullArgs)
         return
     }
 
