@@ -151,18 +151,29 @@ const wordbookCommand = (args, msg, cmd, fullArgs) => {
     fullArgs = fullArgs.slice(cmd.length + subCommand.length + 2)
     const book = getWordBook(msg.channel.guild.id)
     if(subCommand == 'add') {
-        const [word, reading] = fullArgs.trim().split('=>').map((token) => token.trim())
-        book[word] = reading
-        msg.channel.send(`${word} => ${reading}`)
+        const reply = fullArgs.split('\n')
+                .filter((line) => line.trim())
+                .map((line) => line.trim().split('=>').map((token) => token.trim()))
+                .map(([word, reading]) => {
+                    book[word] = reading
+                    return `${word} => ${reading}`
+                })
+                .join('\n')
+        if(reply) msg.channel.send(reply)
         writeWordBook()
     } else if(subCommand == 'remove' || subCommand == 'delete' || subCommand == 'rm') {
-        const word = fullArgs.trim()
-        if(book[word]) delete book[word]
-        msg.channel.send(`${word} => ${word}`)
+        const reply = fullArgs.split('\n')
+                .map((line) => line.trim())
+                .map((word) => {
+                    if(book[word]) delete book[word]
+                    return `${word} => ${word}`
+                })
+                .join('\n')
+        if(reply) msg.channel.send(reply)
         writeWordBook()
     } else if(subCommand == 'list' || subCommand == 'ls') {
-        const text = Object.entries(book).map(([word, reading]) => `${word} => ${reading}`).join('\n')
-        msg.channel.send(text)
+        const reply = Object.entries(book).map(([word, reading]) => `${word} => ${reading}`).join('\n')
+        if(reply) msg.channel.send(reply)
     }
 }
 
