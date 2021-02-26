@@ -1,11 +1,13 @@
 const {buildDict} = require('./dictionary')
 const dic2 = buildDict('dic/dic2.txt')
 const dic4 = buildDict('dic/dic4.txt')
+const jp = buildDict('dic/jp.txt')
+const cn = buildDict('dic/cn.txt')
 const MAX_LENGTH = 10
 const convertHanjaReading = (str) => {
     if(str.includes(' ')) return str.split(' ').map((word) => convertHanjaReading(word))
     if(str.length > MAX_LENGTH) return str.match(new RegExp(`.{1,${MAX_LENGTH}}`, 'g')).map((str) => convertHanjaReading(str))
-    str = str.normalize('NFKC')
+    str = normalizeHanja(str)
     let result = ''
     for(let i = 0; i < str.length; ) {
         let found = false
@@ -31,6 +33,7 @@ const convertHanjaReading = (str) => {
     }
     return initialSoundLaw(result)
 }
+const normalizeHanja = (str) => str.normalize('NFKC').split('').map((c) => jp[c] || cn[c] || c).join('')
 const initialSoundLaw = (str) => {
     const c = str.charAt(0).normalize('NFD').split('')
     if(c[0] == 'ᄅ') c[0] = 'ᄂ'
