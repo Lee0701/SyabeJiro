@@ -5,8 +5,8 @@ const jp = buildDict('dic/jp.txt')
 const cn = buildDict('dic/cn.txt')
 const MAX_LENGTH = 10
 const convertHanjaReading = (str) => {
-    if(str.includes(' ')) return str.split(' ').map((word) => convertHanjaReading(word))
-    if(str.length > MAX_LENGTH) return str.match(new RegExp(`.{1,${MAX_LENGTH}}`, 'g')).map((str) => convertHanjaReading(str))
+    if(str.includes(' ')) return str.split(' ').map((word) => convertHanjaReading(word)).join(' ')
+    if(str.length > MAX_LENGTH) return str.match(new RegExp(`.{1,${MAX_LENGTH}}`, 'g')).map((str) => convertHanjaReading(str)).join('')
     str = normalizeHanja(str)
     let result = ''
     for(let i = 0; i < str.length; ) {
