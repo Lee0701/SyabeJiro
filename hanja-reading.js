@@ -29,6 +29,12 @@ const convertHanjaReading = (str) => {
             i++
         }
     }
-    return result
+    return initialSoundLaw(result)
 }
-module.exports = {convertHanjaReading}
+const initialSoundLaw = (str) => {
+    const c = str.charAt(0).normalize('NFD').split('')
+    if(c[0] == 'ᄅ') c[0] = 'ᄂ'
+    if(c[0] == 'ᄂ' && 'ᅣᅤᅧᅨᅭᅲᅴᅵ'.includes(c[1])) c[0] = 'ᄋ'
+    return c.join('').normalize('NFC') + str.slice(1)
+}
+module.exports = {convertHanjaReading, initialSoundLaw}

@@ -6,7 +6,7 @@ const {https} = require('follow-redirects')
 const queue = require('block-queue')
 const Discord = require('discord.js')
 const {speak} = require('./papago-tts.js')
-const {convertHanjaReading} = require('./hanja.js')
+const {convertHanjaReading} = require('./hanja-reading.js')
 
 const client = new Discord.Client()
 
