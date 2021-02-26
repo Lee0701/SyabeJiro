@@ -6,6 +6,7 @@ const {https} = require('follow-redirects')
 const queue = require('block-queue')
 const Discord = require('discord.js')
 const {speak} = require('./papago-tts.js')
+const {convertHanjaReading} = require('./hanja.js')
 
 const client = new Discord.Client()
 
@@ -217,7 +218,8 @@ client.on('message', (msg) => {
         const hangulCount = content.split('').filter((c) => c >= '\uac00' && c <= '\ud7af').length
         const language = kanaCount > hangulCount ? 'ja' : 'ko'
         const speaker = language == 'ja' ? 'yuri' : 'kyuri'
-        const text = book ? replaceBook(book, content, language) : content
+        let text = book ? replaceBook(book, content, language) : content
+        if(language == 'ko') text = convertHanjaReading(text)
         guild.fetchQueue.push({guild, text, speaker})
     }
 })
