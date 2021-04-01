@@ -33,7 +33,7 @@ const convertHanjaReading = (str) => {
     }
     return initialSoundLaw(result)
 }
-const normalizeHanja = (str) => str.normalize('NFKC').split('').map((c) => dic2[c] ? c : jp[c] || cn[c]).join('')
+const normalizeHanja = (str) => str.normalize('NFKC').split('').map((c) => dic2[c] ? c : jp[c] || cn[c] || c).join('')
 const initialSoundLaw = (str) => {
     const c = str.charAt(0).normalize('NFD').split('')
     if(c[0] == 'ᄅ') c[0] = 'ᄂ'
