@@ -4,9 +4,10 @@ const dic4 = buildDict('dic/dic4.txt')
 const jp = buildDict('dic/jp.txt')
 const cn = buildDict('dic/cn.txt')
 const MAX_LENGTH = 10
-const convertHanjaReading = (str) => {
-    if(str.includes(' ')) return str.split(' ').map((word) => convertHanjaReading(word)).join(' ')
-    if(str.length > MAX_LENGTH) return str.match(new RegExp(`.{1,${MAX_LENGTH}}`, 'g')).map((str) => convertHanjaReading(str)).join('')
+const convertHanjaReading = (str, initial=true) => {
+    if(str.includes(' ')) return str.split(' ').map((word) => convertHanjaReading(word, true)).join(' ')
+    if(str.length > MAX_LENGTH) return str.match(new RegExp(`.{1,${MAX_LENGTH}}`, 'g')).map((str, i) => convertHanjaReading(str, initial && i == 0)).join('')
+    if(str.length == 0) return str
     str = normalizeHanja(str)
     let result = ''
     for(let i = 0; i < str.length; ) {
@@ -21,7 +22,7 @@ const convertHanjaReading = (str) => {
             const key = str.slice(i, j)
             const value = dic4[key] || dic2[key]
             if(value) {
-                result += value
+                result += initial ? initialSoundLaw(value) : value
                 i += j - i
                 found = true
             }
@@ -30,8 +31,9 @@ const convertHanjaReading = (str) => {
             result += c
             i++
         }
+        initial = false
     }
-    return initialSoundLaw(result)
+    return result
 }
 const normalizeHanja = (str) => str.normalize('NFKC').split('').map((c) => dic2[c] ? c : jp[c] || cn[c] || c).join('')
 const initialSoundLaw = (str) => {
