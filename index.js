@@ -20,7 +20,7 @@ const FILE_FORCE_PREFIX = 'file?!'
 
 const MENTION_REGEX = /\<(\@|\#)\!?\d{18}\>/g
 const URL_REGEX = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/=]*)/g
-const CUSTOM_EMOJI_REGEX = /\<\:[^\:]+\:\d+\>/g
+const CUSTOM_EMOJI_REGEX = /\<a?\:[^\:]+\:\d+\>/g
 const REGEX_REPLACEMENTS = [
     [MENTION_REGEX, 'mention'],
     [URL_REGEX, 'URL'],
