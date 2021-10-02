@@ -7,6 +7,7 @@ const queue = require('block-queue')
 const Discord = require('discord.js')
 const {speak} = require('./papago-tts.js')
 const {convertHanjaReading} = require('./hanja-reading.js')
+const {normalizeKanji} = require('./kanji-reading.js')
 
 const client = new Discord.Client()
 
@@ -220,6 +221,7 @@ client.on('message', (msg) => {
         const speaker = language == 'ja' ? 'yuri' : 'kyuri'
         let text = book ? replaceBook(book, content, language) : content
         if(language == 'ko') text = convertHanjaReading(text)
+        if(language == 'ja') text = normalizeKanji(text)
         guild.fetchQueue.push({guild, text, speaker})
     }
 })
