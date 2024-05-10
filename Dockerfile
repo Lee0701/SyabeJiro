@@ -1,12 +1,14 @@
-FROM node:12
+FROM node:20
 WORKDIR /usr/src/app
 
 RUN apt update
 RUN apt install -y ffmpeg
 
-COPY package*.json ./
-RUN npm install
+RUN npm install -g pnpm
+COPY package.json .
+COPY pnpm-lock.yaml .
+RUN pnpm install
 
 COPY . .
 
-CMD ["npm", "start"]
+CMD ["pnpm", "start"]
