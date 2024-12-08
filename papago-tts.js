@@ -1,5 +1,5 @@
 
-const p = require('phin')
+const p = require('phn')
 
 const crypto = require('crypto')
 const {v4: uuidv4} = require('uuid')

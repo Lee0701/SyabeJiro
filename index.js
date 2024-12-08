@@ -2,14 +2,22 @@
 require('dotenv').config()
 const fs = require('fs')
 const path = require('path')
+const p = require('phn')
 const {https} = require('follow-redirects')
 const queue = require('block-queue')
 const Discord = require('discord.js')
+const Voice = require('@discordjs/voice')
 const {speak} = require('./papago-tts.js')
 const {convertHanjaReading} = require('./hanja-reading.js')
 const {normalizeKanji} = require('./kanji-reading.js')
 
-const client = new Discord.Client()
+const intents = [
+    Discord.GatewayIntentBits.Guilds,
+    Discord.GatewayIntentBits.GuildMessages,
+    Discord.GatewayIntentBits.MessageContent,
+    Discord.GatewayIntentBits.GuildVoiceStates,
+]
+const client = new Discord.Client({intents})
 
 const token = process.env.BOT_TOKEN
 const prefix = process.env.CMD_PREFIX || '2?'
@@ -111,39 +119,46 @@ const processFetchQueue = ({guild, text, speaker}, done) => {
 
 const processSpeakQueue = ({guild, url, volume}, done) => {
     if(!volume) volume = 1
-    const dispatcher = guild.connection.play(url, {volume})
-    dispatcher.on('finish', () => done())
-    dispatcher.on('error', () => done())
-    guild.dispatcher = dispatcher
+    p({url, stream: true}).then((stream) => {
+        const resource = Voice.createAudioResource(stream, {volume})
+        guild.audioPlayer.play(resource)
+        guild.audioPlayer.on(Voice.AudioPlayerStatus.Idle, () => done())
+        guild.audioPlayer.on('error', () => done())
+    })
 }
 
 const joinCommand = (args, msg) => {
     const member = msg.guild.members.resolve(msg.author)
     const voice = member.voice
     if(!voice || !voice.channel) return
-    voice.channel.join().then((connection) => {
-        guilds[msg.channel.guild.id] = {
-            channel: msg.channel,
-            connection: connection,
-            dispatcher: null,
-            fetchQueue: queue(1, processFetchQueue),
-            speakQueue: queue(1, processSpeakQueue)
-        }
+    const connection = Voice.joinVoiceChannel({
+        channelId: voice.channel.id,
+        guildId: msg.channel.guild.id,
+        adapterCreator: msg.channel.guild.voiceAdapterCreator,
     })
+    const audioPlayer = Voice.createAudioPlayer()
+    connection.subscribe(audioPlayer)
+    guilds[msg.channel.guild.id] = {
+        channel: msg.channel,
+        audioPlayer,
+        fetchQueue: queue(1, processFetchQueue),
+        speakQueue: queue(1, processSpeakQueue)
+    }
 }
 
 const leaveCommand = (args, msg) => {
     const member = msg.guild.members.resolve(msg.author)
     const voice = member.voice
     if(!voice || !voice.channel) return
-    voice.channel.leave()
+    const connection = Voice.getVoiceConnection(msg.channel.guild.id)
+    if(connection) connection.destroy()
     if(guilds[msg.channel.guild.id]) delete guilds[msg.channel.guild.id]
 }
 
 const stopCommand = (args, msg) => {
     const guild = guilds[msg.channel.guild.id]
     if(guild && guild.dispatcher) {
-        guild.dispatcher.destroy('stopped')
+        guild.audioPlayer.stop(true)
     }
 }
 
@@ -193,12 +208,12 @@ const commands = {
     wb: wordbookCommand,
 }
 
-client.on('ready', () => {
+client.once(Discord.Events.ClientReady, () => {
     console.log(`Logged in as ${client.user.tag}.`)
     readWordBook()
 })
 
-client.on('message', (msg) => {
+client.on(Discord.Events.MessageCreate, (msg) => {
     if(msg.author.bot) return
     if(!msg.content) return
 
