@@ -157,7 +157,7 @@ const leaveCommand = (args, msg) => {
 
 const stopCommand = (args, msg) => {
     const guild = guilds[msg.channel.guild.id]
-    if(guild && guild.dispatcher) {
+    if(guild && guild.audioPlayer) {
         guild.audioPlayer.stop(true)
     }
 }
