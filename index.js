@@ -121,9 +121,13 @@ const processSpeakQueue = ({guild, url, volume}, done) => {
     if(!volume) volume = 1
     p({url, stream: true}).then((stream) => {
         const resource = Voice.createAudioResource(stream, {volume})
+        guild.audioPlayer = Voice.createAudioPlayer()
+        if(guild.connection) guild.connection.subscribe(guild.audioPlayer)
         guild.audioPlayer.play(resource)
-        guild.audioPlayer.on(Voice.AudioPlayerStatus.Idle, () => done())
         guild.audioPlayer.on('error', () => done())
+        guild.audioPlayer.on('stateChange', (oldState, newState) => {
+            if(newState.status == Voice.AudioPlayerStatus.Idle) done()
+        })
     })
 }
 
@@ -136,11 +140,9 @@ const joinCommand = (args, msg) => {
         guildId: msg.channel.guild.id,
         adapterCreator: msg.channel.guild.voiceAdapterCreator,
     })
-    const audioPlayer = Voice.createAudioPlayer()
-    connection.subscribe(audioPlayer)
     guilds[msg.channel.guild.id] = {
         channel: msg.channel,
-        audioPlayer,
+        connection,
         fetchQueue: queue(1, processFetchQueue),
         speakQueue: queue(1, processSpeakQueue)
     }
