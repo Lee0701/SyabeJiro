@@ -97,7 +97,7 @@ const processFetchQueue = ({guild, text, speaker}, done) => {
                 ? text.slice(FILE_FORCE_PREFIX.length)
                 : text.slice(FILE_PREFIX.length)
         downloadFile(url, force).then((stream) => {
-            guild.speakQueue.push({guild, url: stream, volume: 0.25})
+            guild.speakQueue.push({guild, stream, volume: 0.25})
             done()
         })
     } else {
@@ -117,9 +117,9 @@ const processFetchQueue = ({guild, text, speaker}, done) => {
     }
 }
 
-const processSpeakQueue = ({guild, url, volume}, done) => {
+const processSpeakQueue = ({guild, url, stream, volume}, done) => {
     if(!volume) volume = 1
-    p({url, stream: true}).then((stream) => {
+    const play = (stream) => {
         const resource = Voice.createAudioResource(stream, {volume})
         guild.audioPlayer = Voice.createAudioPlayer()
         if(guild.connection) guild.connection.subscribe(guild.audioPlayer)
@@ -128,7 +128,9 @@ const processSpeakQueue = ({guild, url, volume}, done) => {
         guild.audioPlayer.on('stateChange', (oldState, newState) => {
             if(newState.status == Voice.AudioPlayerStatus.Idle) done()
         })
-    })
+    }
+    if(!stream) p({url, stream: true}).then((stream) => play(stream))
+    else play(stream)
 }
 
 const joinCommand = (args, msg) => {
