@@ -219,10 +219,11 @@ client.once(Discord.Events.ClientReady, () => {
 
 client.on(Discord.Events.MessageCreate, (msg) => {
     if(msg.author.bot) return
-    if(!msg.content) return
+    const content = msg.cleanContent
+    if(!content) return
 
-    if(msg.content.startsWith(prefix)) {
-        const fullArgs = msg.content.slice(prefix.length)
+    if(content.startsWith(prefix)) {
+        const fullArgs = content.slice(prefix.length)
         const args = fullArgs.split(/\s+/)
         const cmd = args.shift()
         const command = commands[cmd]
@@ -233,7 +234,7 @@ client.on(Discord.Events.MessageCreate, (msg) => {
     const guild = guilds[msg.channel.guild.id]
     if(guild && guild.channel.id == msg.channel.id) {
         const book = getWordBook(msg.channel.guild.id)
-        const content = preprocess(msg.content)
+        const content = preprocess(content)
         const kanaCount = content.split('').filter((c) => c >= '\u3040' && c <= '\u309f' || c >= '\u30a0' && c <= '\u30ff' || c >= '\uff66' && c <= '\uff9d').length
         const hangulCount = content.split('').filter((c) => c >= '\uac00' && c <= '\ud7af').length
         const language = kanaCount > hangulCount ? 'ja' : 'ko'
